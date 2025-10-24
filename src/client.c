@@ -9,6 +9,13 @@
 
 #define BUFFER_SIZE 1024
 
+void *get_in_addr(struct sockaddr *sa) {
+    if (sa->sa_family == AF_INET) {
+        return &(((struct sockaddr_in*)sa)->sin_addr);
+    }
+    return &(((struct sockaddr_in6*)sa)->sin6_addr);
+}
+
 int main(int argc, char *argv[]) {
     int sockfd;
     struct addrinfo hints, *servinfo, *p;
@@ -33,14 +40,14 @@ int main(int argc, char *argv[]) {
 
     for (p = servinfo; p != NULL; p = p->ai_next) {
         // socket()
-        sockfd = socket(p->ai_family, p->ai_socktype, p->ai_protocol); [cite: 94]
+        sockfd = socket(p->ai_family, p->ai_socktype, p->ai_protocol); 
         if (sockfd < 0) {
             perror("cliente: ERRO socket()");
             continue;
         }
 
         // connect()
-        if (connect(sockfd, p->ai_addr, p->ai_addrlen) < 0) { [cite: 190]
+        if (connect(sockfd, p->ai_addr, p->ai_addrlen) < 0) { 
             perror("cliente: ERRO connect()");
             close(sockfd);
             continue;
@@ -62,7 +69,7 @@ int main(int argc, char *argv[]) {
     freeaddrinfo(servinfo);
 
     // recv()
-    int numbytes = recv(sockfd, buffer, BUFFER_SIZE - 1, 0); [cite: 208]
+    int numbytes = recv(sockfd, buffer, BUFFER_SIZE - 1, 0); 
     if (numbytes < 0) {
         perror("recv");
         close(sockfd);
@@ -78,14 +85,14 @@ int main(int argc, char *argv[]) {
 
     // send()
     char *msg_resposta = "Ola servidor! Sou o cliente.\n";
-    if (send(sockfd, msg_resposta, strlen(msg_resposta), 0) == -1) { [cite: 195]
+    if (send(sockfd, msg_resposta, strlen(msg_resposta), 0) == -1) { 
         perror("send");
     } else {
         printf("Cliente: Mensagem de resposta enviada.\n");
     }
 
     // close()
-    close(sockfd); [cite: 214]
+    close(sockfd); 
     printf("Cliente: Conexão fechada.\n");
 
     return 0;

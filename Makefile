@@ -1,10 +1,10 @@
 CC = gcc
-CFLAGS = -Wall -g -std=c11
+CFLAGS = -Wall -g -std=c11 -D_POSIX_C_SOURCE=200112L
 
 SRC_DIR = src
 BIN_DIR = bin
 
-CLIENT_SRC = $(SRC_DIR)/cliente.c
+CLIENT_SRC = $(SRC_DIR)/client.c
 SERVER_SRC = $(SRC_DIR)/servidor.c
 
 CLIENT_BIN = $(BIN_DIR)/client
