@@ -1,29 +1,66 @@
+# Compilador
 CC = gcc
-CFLAGS = -Wall -g -std=c11 -D_POSIX_C_SOURCE=200112L
 
-SRC_DIR = src
+# Flags: -Wall (warnings), -g (debug), -std=c11
+# -Iinclude (Procure headers na pasta 'include/')
+# -D_DEFAULT_SOURCE (Para expor SA_RESTART e outras)
+CFLAGS = -Wall -g -std=c11 -Iinclude -D_DEFAULT_SOURCE
+
+# --- Diretórios ---
 BIN_DIR = bin
+SRC_DIR = src
+OBJ_DIR = obj
+INCLUDE_DIR = include
 
-CLIENT_SRC = $(SRC_DIR)/client.c
-SERVER_SRC = $(SRC_DIR)/servidor.c
+# --- Fontes (.c) e Objetos (.o) ---
+# Fontes do Servidor
+SERVER_SRCS = $(SRC_DIR)/servidor.c $(SRC_DIR)/logica.c
+# Objetos do Servidor
+SERVER_OBJS = $(patsubst $(SRC_DIR)/%.c, $(OBJ_DIR)/%.o, $(SERVER_SRCS))
 
-CLIENT_BIN = $(BIN_DIR)/client
+# --- CORREÇÃO AQUI ---
+# Fontes do Cliente (agora inclui logica.c)
+CLIENT_SRCS = $(SRC_DIR)/client.c $(SRC_DIR)/logica.c
+# Objetos do Cliente (derivados das fontes)
+CLIENT_OBJS = $(patsubst $(SRC_DIR)/%.c, $(OBJ_DIR)/%.o, $(CLIENT_SRCS))
+# --- FIM DA CORREÇÃO ---
+
+# --- Binários ---
 SERVER_BIN = $(BIN_DIR)/server
+CLIENT_BIN = $(BIN_DIR)/client
 
-all: $(CLIENT_BIN) $(SERVER_BIN)
+# --- Header (Dependência) ---
+# Header principal
+HEADER = $(INCLUDE_DIR)/logica.h
 
-$(CLIENT_BIN): $(CLIENT_SRC)
-	@mkdir -p $(BIN_DIR) 
-	$(CC) $(CFLAGS) -o $(CLIENT_BIN) $(CLIENT_SRC)
-	@echo "Cliente compilado em $(CLIENT_BIN)"
+# --- Regras ---
 
-$(SERVER_BIN): $(SERVER_SRC)
-	@mkdir -p $(BIN_DIR) 
-	$(CC) $(CFLAGS) -o $(SERVER_BIN) $(SERVER_SRC)
-	@echo "Servidor compilado em $(SERVER_BIN)"
+# Regra Padrão: 'make' ou 'make all'
+all: $(SERVER_BIN) $(CLIENT_BIN)
 
+# Regra para LINKAR o executável do servidor
+$(SERVER_BIN): $(SERVER_OBJS)
+	@mkdir -p $(BIN_DIR)
+	$(CC) $(CFLAGS) -o $@ $^
+	@echo "Servidor linkado: $@"
+
+# Regra para LINKAR o executável do cliente (Corrigida para CLIENT_OBJS)
+$(CLIENT_BIN): $(CLIENT_OBJS)
+	@mkdir -p $(BIN_DIR)
+	$(CC) $(CFLAGS) -o $@ $^
+	@echo "Cliente linkado: $@"
+
+# Regra Padrão para COMPILAR .c para .o
+$(OBJ_DIR)/%.o: $(SRC_DIR)/%.c $(HEADER)
+	@mkdir -p $(OBJ_DIR)
+	$(CC) $(CFLAGS) -c $< -o $@ 
+	@echo "Compilado: $<"
+
+# Regra para Limpar
 clean:
-	@rm -f $(BIN_DIR)/client $(BIN_DIR)/server
-	@echo "Binários removidos."
+	@rm -f $(SERVER_BIN) $(CLIENT_BIN)
+	@rm -rf $(OBJ_DIR)
+	@echo "Binários e objetos removidos."
 
+# Regras que não geram arquivos
 .PHONY: all clean
