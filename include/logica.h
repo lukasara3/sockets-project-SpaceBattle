@@ -56,5 +56,4 @@ typedef struct {
 void secaoDeJogo(int sockfd); 
 const char* stringAcao(int action, int is_client);
 void *get_in_addr(struct sockaddr *sa);
-
 #endif 

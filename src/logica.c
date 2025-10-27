@@ -16,6 +16,8 @@ static const char* RES_EVASAO_SERVIDOR = "Resultado: Voce errou o Torpedo (inimi
 static const char* RES_SEM_DANO = "Resultado: Ninguem recebeu dano.\n";
 
 static TurnResult resolveTurno(int client_act, int server_act, int* torp_used, int* shld_used);
+static void imprimirInventario(int sockfd, int client_hp, int server_hp, int turn_count, int client_torpedoes_used, int client_shields_used, const char* status_msg, MessageType final_status_type);
+
 
 void secaoDeJogo(int sockfd) {
 
@@ -104,36 +106,7 @@ void secaoDeJogo(int sockfd) {
     msg_to_client.server_hp = server_hp;
     send(sockfd, &msg_to_client, sizeof(BattleMessage), 0);
 
-    memset(&msg_to_client, 0, sizeof(BattleMessage));
-    msg_to_client.type = MSG_INVENTORY;
-    char inventory_message[MSG_SIZE * 4];
-    sprintf(inventory_message,
-        "Inventario final:\n"
-        "- HP restante: %d\n"
-        "- HP inimigo restante: %d\n"
-        "- Total de turnos jogados: %d\n"
-        "- Torpedos usados: %d\n"
-        "- Escudos usados: %d\n",
-        client_hp, server_hp, turn_count, client_torpedoes_used, client_shields_used
-    );
-    size_t len = strlen(status_msg);
-    if (len > 0 && status_msg[len - 1] == '\n') {
-        status_msg[len - 1] = '\0';
-    }
-    strncat(inventory_message, status_msg, sizeof(inventory_message) - strlen(inventory_message) - 1);
-    strncat(inventory_message, "\n", sizeof(inventory_message) - strlen(inventory_message) - 1);
-    
-    if (final_status_type == MSG_ESCAPE) {
-        strncat(inventory_message, "Obrigado por jogar!\n", sizeof(inventory_message) - strlen(inventory_message) - 1); // Garante \n no final
-    }
-
-    msg_to_client.client_hp = client_hp;
-    msg_to_client.server_hp = server_hp;
-    msg_to_client.client_torpedoes = client_torpedoes_used;
-    msg_to_client.client_shields = client_shields_used;
-    strncpy(msg_to_client.message, inventory_message, MSG_SIZE - 1);
-    msg_to_client.message[MSG_SIZE - 1] = '\0';
-    send(sockfd, &msg_to_client, sizeof(BattleMessage), 0);
+    imprimirInventario(sockfd, client_hp, server_hp, turn_count, client_torpedoes_used, client_shields_used, status_msg, final_status_type);
 }
 
 
@@ -252,4 +225,46 @@ const char* stringAcao(int action, int is_client) {
             default: return "Servidor tomou uma acao invalida.\n";
         }
     }
+}
+
+static void imprimirInventario(int sockfd, int client_hp, int server_hp, int turn_count, int client_torpedoes_used, int client_shields_used, const char* status_msg, MessageType final_status_type) {
+    BattleMessage msg_inventory;
+    memset(&msg_inventory, 0, sizeof(BattleMessage));
+    msg_inventory.type = MSG_INVENTORY;
+
+    char inventory_message[MSG_SIZE * 4];
+
+    sprintf(inventory_message,
+        "Inventario final:\n"
+        "- HP restante: %d\n"
+        "- HP inimigo restante: %d\n"
+        "- Total de turnos jogados: %d\n"
+        "- Torpedos usados: %d\n"
+        "- Escudos usados: %d\n",
+        client_hp, server_hp, turn_count, client_torpedoes_used, client_shields_used
+    );
+
+    char temp_status[100];
+    strncpy(temp_status, status_msg, sizeof(temp_status) - 1);
+    temp_status[sizeof(temp_status) - 1] = '\0';
+    size_t len = strlen(temp_status);
+    if (len > 0 && temp_status[len - 1] == '\n') {
+        temp_status[len - 1] = '\0';
+    }
+    strncat(inventory_message, temp_status, sizeof(inventory_message) - strlen(inventory_message) - 1);
+    strncat(inventory_message, "\n", sizeof(inventory_message) - strlen(inventory_message) - 1);
+
+    if (final_status_type == MSG_ESCAPE) {
+        strncat(inventory_message, "Obrigado por jogar!\n", sizeof(inventory_message) - strlen(inventory_message) - 1);
+    }
+
+    msg_inventory.client_hp = client_hp;
+    msg_inventory.server_hp = server_hp;
+    msg_inventory.client_torpedoes = client_torpedoes_used;
+    msg_inventory.client_shields = client_shields_used;
+
+    strncpy(msg_inventory.message, inventory_message, MSG_SIZE - 1);
+    msg_inventory.message[MSG_SIZE - 1] = '\0';
+
+    send(sockfd, &msg_inventory, sizeof(BattleMessage), 0);
 }
