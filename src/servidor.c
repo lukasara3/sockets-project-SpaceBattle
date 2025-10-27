@@ -1,16 +1,9 @@
 #include "logica.h" 
 
-void *get_in_addr(struct sockaddr *sa) {
-    if (sa->sa_family == AF_INET) {
-        return &(((struct sockaddr_in*)sa)->sin_addr);
-    }
-    return &(((struct sockaddr_in6*)sa)->sin6_addr);
-}
-
 int main(int argc, char *argv[]) {
-    
-    int sockfd; //para escuta
-    int new_sockfd; //para conexao
+
+    int sockfd; // escuta
+    int new_sockfd; // conexao
     struct addrinfo hints, *servinfo, *p;
     struct sockaddr_storage cli_addr; //conexao do cliente
     socklen_t cli_len;
@@ -18,22 +11,23 @@ int main(int argc, char *argv[]) {
     int status;
     int yes = 1;
 
+    // Validar Argumentos
     if (argc != 3) {
         fprintf(stderr, "Uso: %s <v4|v6> <porta>\n", argv[0]);
         exit(EXIT_FAILURE);
     }
-    char *protocolo = argv[1]; //o numero 4 do enunciado diz que o primeiro argumento eh o protocolo v4 ou v6 e o segundo a porta
+    char *protocolo = argv[1];
     char *porta = argv[2];
 
     //hints para a getaddrinfo
     memset(&hints, 0, sizeof hints);
-    hints.ai_socktype = SOCK_STREAM; 
+    hints.ai_socktype = SOCK_STREAM; // TCP
     hints.ai_flags = AI_PASSIVE;     // usar meu IP (para bind)
 
     if (strcmp(protocolo, "v4") == 0) {
-        hints.ai_family = AF_INET;
+        hints.ai_family = AF_INET; // IPv4
     } else if (strcmp(protocolo, "v6") == 0) {
-        hints.ai_family = AF_INET6;
+        hints.ai_family = AF_INET6; // IPv6
     } else {
         fprintf(stderr, "Protocolo invalido. Use 'v4' ou 'v6'.\n");
         exit(EXIT_FAILURE);
@@ -52,7 +46,6 @@ int main(int argc, char *argv[]) {
             continue;
         }
 
-        // Opcional, mas útil para reusar a porta em testes
         if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int)) == -1) {
             perror("servidor: ERRO setsockopt()");
             close(sockfd);
@@ -64,7 +57,7 @@ int main(int argc, char *argv[]) {
             close(sockfd);
             continue;
         }
-        break; 
+        break;
     }
 
     freeaddrinfo(servinfo);
@@ -82,25 +75,29 @@ int main(int argc, char *argv[]) {
 
     printf("Servidor StarFleet aguardando conexões na porta %s...\n", porta);
 
-    // accept e conexao
+    // accept e conexao (iterativo, um cliente por vez)
     while (1) {
         cli_len = sizeof cli_addr;
-        
+
         new_sockfd = accept(sockfd, (struct sockaddr *)&cli_addr, &cli_len);
         if (new_sockfd < 0) {
+            // Ignora erros de accept (ex: interrupção) e continua esperando
+            if (errno == EINTR) continue;
             perror("accept");
-            continue; 
+            continue;
         }
 
         inet_ntop(cli_addr.ss_family, get_in_addr((struct sockaddr *)&cli_addr), cli_ip_str, sizeof cli_ip_str);
         printf("Servidor: Conexão recebida de %s. Iniciando batalha.\n", cli_ip_str);
 
-        SecaoDeJogo(new_sockfd);
-        
+        // Processa toda a seção de jogo para este cliente
+        secaoDeJogo(new_sockfd);
+
+        // Fecha a conexão com o cliente atual
         close(new_sockfd);
         printf("Servidor: Sessão com %s terminada. Aguardando próximo cliente...\n", cli_ip_str);
     }
 
-    close(sockfd);
+    close(sockfd); // Nunca será atingido
     return 0;
 }

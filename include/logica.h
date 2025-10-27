@@ -19,19 +19,21 @@
 #define BACKLOG 10 
 
 typedef enum {
-    MSG_INIT,        // 0 
-    MSG_ACTION_REQ,  // 1
-    MSG_ACTION_RES,  // 2
-    MSG_BATTLE_RESULT, // 3
-    MSG_GAME_OVER    // 4 
-} MessageType;
+    MSG_INIT,
+    MSG_ACTION_REQ, 
+    MSG_ACTION_RES,
+    MSG_BATTLE_RESULT, 
+    MSG_INVENTORY, 
+    MSG_GAME_OVER, 
+    MSG_ESCAPE 
+} MessageType ;
 
 typedef enum {
-    LASER,        // 0
-    TORPEDO,      // 1
-    SHIELDS,      // 2
-    CLOAKING,     // 3
-    HYPER_JUMP    // 4
+    LASER,        
+    TORPEDO,      
+    SHIELDS,      
+    CLOAKING,     
+    HYPER_JUMP    
 } ActionType;
 
 typedef struct {
@@ -51,8 +53,8 @@ typedef struct {
     char text[MSG_SIZE * 2];
 } TurnResult;
 
-void SecaoDeJogo(int sockfd); 
-const char* StringAcao(int action, int is_client);
+void secaoDeJogo(int sockfd); 
+const char* stringAcao(int action, int is_client);
 void *get_in_addr(struct sockaddr *sa);
 
 #endif 
